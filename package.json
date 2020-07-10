@@ -12,7 +12,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
     "node-yeelight": "^1.0.6",
     "readline-sync": "^1.4.10",
     "ws": "^7.3.1"

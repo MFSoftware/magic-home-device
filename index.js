@@ -1,20 +1,16 @@
 const fs = require("fs");
-const axios = require("axios").default;
 const readLine = require("readline-sync");
 
-const Yeelight = require('node-yeelight');
+const Yeelight = require("node-yeelight");
 const WebSocket = require("ws");
 
 const isReconnect = fs.existsSync("reconnectToken");
 const isDev = process.env.NODE_ENV === "development";
 
 let connectionToken = isReconnect ? fs.readFileSync("reconnectToken", { encoding: "utf8" }) : readLine.question("Enter connection token: ");
-let deviceId;
+let deviceId = isReconnect ? fs.readFileSync("deviceId", { encoding: "utf8" }) : null;
 let state = false;
 
-const api = axios.create({
-    baseURL: isDev ? "http://localhost:3090/api/" : "https://home.mfsoftware.site/api/"
-});
 const y = new Yeelight;
  
 y.on('ready', () => {
@@ -30,14 +26,6 @@ y.on('deviceconnected', device => {
 });
 
 async function start(device) {
-    if (fs.existsSync("deviceId")) deviceId = fs.readFileSync("deviceId", { encoding: "utf8" });
-    else {
-        let r = await api.get("generators/uuid");
-        deviceId = r.data.uuid;
-        
-        fs.writeFileSync("deviceId", deviceId);
-    }
-
     const ws = new WebSocket(isDev ? "ws://localhost:3091/" : "wss://home.mfsoftware.site/ws");
 
     function send(data) {
@@ -46,6 +34,8 @@ async function start(device) {
 
     ws.on('open', () => {
         if (isReconnect) {
+            console.log("Device ID:", deviceId);
+
             send({
                 type: "handshake",
                 sender: "device",
@@ -72,6 +62,7 @@ async function start(device) {
 
             case "response":
                 if (msg.responseBody.reconnectToken != null) {
+                    fs.writeFileSync("deviceId", msg.responseBody.deviceId);
                     fs.writeFileSync("reconnectToken", msg.responseBody.reconnectToken);
                 } else console.log("Response:", msg.responseBody);
                 break;
