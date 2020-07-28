@@ -32,6 +32,16 @@ async function start(device) {
         ws.send(JSON.stringify(data));
     }
 
+    function sendNotification(title, message) {
+        send({
+            type: "notification",
+            notification: {
+                title: title,
+                message: message
+            }
+        });
+    }
+
     ws.on('open', () => {
         if (isReconnect) {
             console.log("Device ID:", deviceId);
@@ -70,6 +80,8 @@ async function start(device) {
             case "event":
                 state = !state;
                 y.setPower(device, state, 300);
+
+                if (state) sendNotification("Внимание", "Свет включен");
                 break;
 
             default:
