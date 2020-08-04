@@ -8,17 +8,20 @@ const isReconnect = fs.existsSync("reconnectToken");
 const isDev = process.env.NODE_ENV === "development";
 
 let connectionToken = isReconnect ? fs.readFileSync("reconnectToken", { encoding: "utf8" }) : readLine.question("Enter connection token: ");
+let deviceFinded = false;
 let deviceId = isReconnect ? fs.readFileSync("deviceId", { encoding: "utf8" }) : null;
+
 let state = false;
 
 const y = new Yeelight;
  
 y.on('ready', () => {
-    y.discover(); // scan network for active Yeelights
+    y.discover();
 });
 
 y.on('deviceadded', device => {
-    y.connect(device);
+    if (!deviceFinded) y.connect(device);
+    else deviceFinded = true;
 });
 
 y.on('deviceconnected', device => {
@@ -26,20 +29,32 @@ y.on('deviceconnected', device => {
 });
 
 async function start(device) {
-    const ws = new WebSocket(isDev ? "ws://localhost:3091/" : "wss://home.mfsoftware.site/ws");
+    let ws = new WebSocket(isDev ? "ws://localhost:3091/" : "wss://home.mfsoftware.site/ws");
 
     function send(data) {
         ws.send(JSON.stringify(data));
     }
 
-    function sendNotification(title, message) {
-        send({
+    function sendNotification(title, message, type = "normal", senderId = null) {
+        let body = {
             type: "notification",
+            notificationType: type,
             notification: {
                 title: title,
                 message: message
             }
-        });
+        };
+
+        if (type === "security") {
+            if (senderId == null) {
+                console.error("senderId must be passed");
+                return;
+            }
+
+            body.senderSessionId = senderId;
+        }
+        
+        send(body);
     }
 
     ws.on('open', () => {
@@ -81,13 +96,26 @@ async function start(device) {
                 state = !state;
                 y.setPower(device, state, 300);
 
-                if (state) sendNotification("Внимание", "Свет включен");
+                if (state) sendNotification("Внимание", "Свет включен", "security", msg.senderSessionId);
                 break;
 
             default:
                 console.log("Unknown message:", msg);
                 break;
         }
+    });
+
+    ws.on("close", () => {
+        console.log();
+        console.log("Disconnected");
+
+        // TODO: Write reconnect algo
+        /*let timeout = setInterval(() => {
+            clearInterval(timeout);
+
+        }, 5000);*/
+
+        process.exit();
     });
 }
 
