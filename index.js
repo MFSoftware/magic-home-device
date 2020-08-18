@@ -57,6 +57,15 @@ async function start(device) {
         send(body);
     }
 
+    function sendStateResponse(userSessionId, requestId, state) {
+        send({
+            type: "stateResponse",
+            userSessionId: userSessionId,
+            responseId: requestId,
+            state: state
+        });
+    }
+
     ws.on('open', () => {
         if (isReconnect) {
             console.log("Device ID:", deviceId);
@@ -97,6 +106,15 @@ async function start(device) {
                 y.setPower(device, state, 300);
 
                 if (state) sendNotification("Внимание", "Свет включен", "security", msg.senderSessionId);
+                break;
+
+            case "stateRequest":
+                sendStateResponse(msg.userSessionId, msg.requestId, [
+                    {
+                        key: "temperature",
+                        value: "22 °С"
+                    }
+                ]);
                 break;
 
             default:

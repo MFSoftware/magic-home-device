@@ -1,15 +1,14 @@
 {
   "name": "vd",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "MagicHome virtual device",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "cross-env NODE_ENV=development node index",
     "start": "node index"
   },
   "keywords": [],
-  "author": "",
+  "author": "MagicFun1241",
   "license": "ISC",
   "dependencies": {
     "node-yeelight": "^1.0.6",
